@@ -1,0 +1,27 @@
+GRANT ALL PRIVILEGES ON TABLE flight_data TO tiago;
+
+{
+  "time": 1751325057,
+  "states": [
+    [
+      "c07d0b",      // icao24
+      "CGVJE   ",   // callsign
+      "Canada",     // origin_country
+      1751325057,   // time_position
+      1751325057,   // last_contact
+      -74.5243,     // longitude
+      45.2324,      // latitude
+      883.92,       // baro_altitude
+      false,        // on_ground
+      44.67,        // velocity
+      194.68,       // heading
+      -1.95,        // vertical_rate
+      null,         // sensors
+      853.44,       // geo_altitude
+      null,         // squawk
+      false,        // spi
+      0             // position_source
+    ],
+    ...
+  ]
+}
