@@ -1,6 +1,9 @@
-GRANT ALL PRIVILEGES ON TABLE flight_data TO tiago;
+DOC api: https://openskynetwork.github.io/opensky-api/python.html
+
+Exemplo de retorno da api:
 
 {
+
   "time": 1751325057,
   "states": [
     [
