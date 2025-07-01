@@ -1,12 +1,12 @@
-# 🌦️ Natal METEO API Pipeline
+# ✈️ Flight Data Global Pipeline
 
-Pipeline ETL para coleta, processamento e armazenamento de dados meteorológicos de Natal, utilizando **Python**, **Apache Airflow** e **PostgreSQL**.
+Pipeline ETL para coleta, processamento e armazenamento de dados de voos em tempo real, utilizando Python, Apache Airflow e PostgreSQL.
 
 ---
 
 ## 📚 Visão Geral
 
-- **Extração:** Coleta dados da API METEO e salva em JSON.
+- **Extração:** Coleta dados da API OpenSky Network e salva em JSON.
 - **Transformação:** Normaliza, limpa e transforma os dados em CSV.
 - **Carga:** Insere os dados processados em um banco PostgreSQL.
 - **Orquestração:** Todo o fluxo é automatizado via Apache Airflow.
@@ -16,35 +16,35 @@ Pipeline ETL para coleta, processamento e armazenamento de dados meteorológicos
 ## 🗂️ Estrutura do Projeto
 
 ```bash
-api_meteo_pipeline/
-├── config/                  # Configurações globais do pipeline
+ETL_pipeline_dados_real_time_open_sky/
+├── config/
 │   └── settings.py
-├── dags/                    # DAGs do Airflow
-│   └── city_weather_dag.py
-├── data/                    # Dados brutos e processados (ignorado pelo git)
+├── dags/
+│   └── flight_data_dag.py
+├── data/
 │   ├── raw/
 │   └── processed/
-├── logs/                    # Logs do Airflow (ignorado pelo git)
-├── notebooks/               # Notebooks de análise e exploração
-├── plugins/                 # Plugins customizados do Airflow (opcional)
-├── src/     
-│   ├── db/                  # Arquivo de conexão no banco dinâmico (Pode conectar localmente via variáveis .env ou pode conectar no banco do Airflow via connections id)
-│   │   └── db_connections.py      
-│   ├── etl/                 # Aonde a mágica acontece, aqui fica o ETL do projeto
-│   │   └── extract_data.py
-│   │   └── json_loader.py
-│   │   └── load_data.py
+├── logs/
+├── notebooks/
+├── plugins/
+├── src/
+│   ├── db/
+│   │   └── db_connections.py
+│   ├── etl/
+│   │   ├── extract_data.py
+│   │   ├── json_loader.py
+│   │   ├── load_data.py
 │   │   └── transform_data.py
-│   ├── utils/               # Aqui fica algumas funções úteis
+│   ├── utils/
 │   │   └── logger.py
-├── tests/                   # Testes automatizados
-├── .env.example             # Exemplo de Variáveis de ambiente 
+├── tests/
+├── .env.example
 ├── .gitignore
 ├── .dockerignore
-├── docker-compose.yml       # Orquestração dos containers
-├── Dockerfile               # Build customizado (opcional)
-├── requirements.txt         # Dependências Python
-└── main.py                  # Execução manual do pipeline (fora do Airflow)
+├── docker-compose.yml
+├── Dockerfile
+├── requirements.txt
+└── main.py
 
 ```
 
@@ -61,20 +61,21 @@ api_meteo_pipeline/
 ```
 Crie um banco de dados local para acompanhar os dados caindo, insira as credênciais dele no .env e crie a tabela:
 
-CREATE TABLE IF NOT EXISTS natal_weather_records (
-    id SERIAL PRIMARY KEY,
-    measurement_datetime TIMESTAMP WITHOUT TIME ZONE NOT NULL,
-    interval_seconds INTEGER,
-    temperature_celsius NUMERIC(5,2) NOT NULL,
-    wind_speed_kmh NUMERIC(5,2) NOT NULL,
-    wind_direction_degrees INTEGER NOT NULL,
-    is_day INTEGER,
-    weather_condition_code INTEGER NOT NULL,
-    latitude NUMERIC(8,5) NOT NULL,
-    longitude NUMERIC(8,5) NOT NULL,
-    timezone VARCHAR(50) NOT NULL,
-    elevation INTEGER NOT NULL,
-    record_timestamp TIMESTAMP WITHOUT TIME ZONE NOT NULL
+CREATE TABLE IF NOT EXISTS flight_data (
+    icao24 VARCHAR(10) NOT NULL,
+    callsign VARCHAR(10),
+    origin_country VARCHAR(100),
+    latitude DOUBLE PRECISION,
+    longitude DOUBLE PRECISION,
+    velocity DOUBLE PRECISION,
+    heading DOUBLE PRECISION,
+    baro_altitude DOUBLE PRECISION,
+    geo_altitude DOUBLE PRECISION,
+    on_ground BOOLEAN,
+    time_position TIMESTAMP WITHOUT TIME ZONE NOT NULL,
+    last_contact TIMESTAMP WITHOUT TIME ZONE,
+    record_timestamp TIMESTAMP WITHOUT TIME ZONE,
+    PRIMARY KEY (icao24, time_position)
 );
 
 
@@ -103,7 +104,7 @@ docker-compose up --build
 ### 5. **Ative a DAG no Airflow**
 
 1. Acesse a interface web do Airflow
-2. Ative a DAG `natal_weather_pipeline`
+2. Ative a DAG `flight_data_pipeline`
 3. Você pode disparar manualmente ou aguardar a execução automática
 
 ---
@@ -120,7 +121,7 @@ python main.py
 
 ## 🧩 Principais Arquivos
 
-- `dags/city_weather_dag.py`: DAG principal do Airflow
+- `dags/flight_data_dag.py`: DAG principal do Airflow
 - `src/etl/extract_data.py`: Função de extração da API
 - `src/etl/transform_data.py`: Funções de transformação
 - `src/etl/load_data.py`: Função de carga no PostgreSQL
