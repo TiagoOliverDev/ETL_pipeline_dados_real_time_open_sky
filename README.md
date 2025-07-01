@@ -105,7 +105,8 @@ docker-compose up --build
 
 1. Acesse a interface web do Airflow
 2. Ative a DAG `flight_data_pipeline`
-3. Você pode disparar manualmente ou aguardar a execução automática
+3. Vá em admins - connections e adicione as credênciais do banco de dados (pode ser local)
+4. Você pode disparar manualmente ou aguardar a execução automática
 
 ---
 
