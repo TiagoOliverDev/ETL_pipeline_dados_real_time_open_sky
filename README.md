@@ -48,6 +48,21 @@ ETL_pipeline_dados_real_time_open_sky/
 
 ```
 
+
+## 🗂️ Estrutura do Processamento
+
+```bash
+
+    +----------------+              +------------------+               +-------------------+
+    |  Producer API  | --JSON-->    |   Kafka Topic    | --> Stream -->| Spark Structured  |
+    | (OpenSky + ETL)|              | flight-data-raw  |               | Streaming + Write |
+    +----------------+              +------------------+               | to PostgreSQL     |
+                                                                           +-- UPSERT (merge/update)
+
+```
+
+
+
 ---
 
 ## ⚙️ Configuração do Ambiente
@@ -105,7 +120,7 @@ docker-compose up --build
 
 1. Acesse a interface web do Airflow
 2. Ative a DAG `flight_data_pipeline`
-3. Vá em admins - connections e adicione as credênciais do banco de dados (pode ser local)
+3. Vá em admin - connections e adicione as credênciais do banco de dados (pode ser local)
 4. Você pode disparar manualmente ou aguardar a execução automática
 
 ---
