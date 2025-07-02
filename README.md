@@ -105,8 +105,8 @@ CREATE TABLE IF NOT EXISTS flight_data (
 ### 2. **Clone o Repositório**
 
 ```bash
-git clone https://github.com/TiagoOliverDev/ETL_Pipeline_de_Dados_Climaticos
-cd ETL_Pipeline_de_Dados_Climaticos
+git clone https://github.com/TiagoOliverDev/ETL_pipeline_dados_real_time_open_sky
+cd ETL_pipeline_dados_real_time_open_sky
 ```
 
 ---
@@ -147,7 +147,8 @@ python main.py
 Para execução do consumidor Spark Streaming (caso não esteja orquestrado via DAG):
 
 ```bash
-spark-submit src/streaming/spark_streaming_consumer.py
+python src/streaming/kafka_producer.py
+spark-submit src/streaming/structured_streaming.py
 ```
 
 ---
