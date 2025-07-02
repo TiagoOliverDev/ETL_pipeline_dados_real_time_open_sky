@@ -1,15 +1,22 @@
 # ✈️ Flight Data Global Pipeline
 
-Pipeline ETL para coleta, processamento e armazenamento de dados de voos em tempo real, utilizando Python, Apache Airflow e PostgreSQL.
+[![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Airflow DAG](https://img.shields.io/badge/Airflow-DAG-blue)](http://localhost:8080)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-✔️-blue)](https://www.postgresql.org/)
+[![Kafka + Spark Streaming](https://img.shields.io/badge/Streaming-Kafka%20%2B%20Spark-orange)](https://spark.apache.org/structured-streaming/)
+
+Pipeline ETL e de **streaming** para coleta, processamento e armazenamento de dados de voos em tempo real, utilizando **Python**, **Apache Airflow**, **Apache Kafka**, **Apache Spark Structured Streaming** e **PostgreSQL**.
 
 ---
 
 ## 📚 Visão Geral
 
-- **Extração:** Coleta dados da API OpenSky Network e salva em JSON.
-- **Transformação:** Normaliza, limpa e transforma os dados em CSV.
-- **Carga:** Insere os dados processados em um banco PostgreSQL.
-- **Orquestração:** Todo o fluxo é automatizado via Apache Airflow.
+- **Extração (batch e streaming):**
+  - Batch: coleta periódica via DAG no Airflow a partir da API OpenSky Network.
+  - Streaming: dados produzidos continuamente em tópicos Kafka.
+- **Transformação:** dados normalizados, limpos e enriquecidos via pandas (batch) ou Spark Structured Streaming (tempo real).
+- **Carga:** os dados são inseridos ou atualizados no banco PostgreSQL.
+- **Orquestração:** Airflow gerencia tarefas em lote; Kafka + Spark processam o fluxo contínuo.
 
 ---
 
@@ -35,6 +42,9 @@ ETL_pipeline_dados_real_time_open_sky/
 │   │   ├── json_loader.py
 │   │   ├── load_data.py
 │   │   └── transform_data.py
+│   ├── streaming/
+│   │   └── kafka_consumer.py
+│   │   └── structured_streaming.py
 │   ├── utils/
 │   │   └── logger.py
 ├── tests/
@@ -45,23 +55,19 @@ ETL_pipeline_dados_real_time_open_sky/
 ├── Dockerfile
 ├── requirements.txt
 └── main.py
-
 ```
 
+---
 
-## 🗂️ Estrutura do Processamento
+## ⚙️ Arquitetura do Processamento de Streaming
 
 ```bash
-
-    +----------------+              +------------------+               +-------------------+
-    |  Producer API  | --JSON-->    |   Kafka Topic    | --> Stream -->| Spark Structured  |
-    | (OpenSky + ETL)|              | flight-data-raw  |               | Streaming + Write |
-    +----------------+              +------------------+               | to PostgreSQL     |
-                                                                           +-- UPSERT (merge/update)
-
++------------------+        +------------------+        +--------------------------+
+|     Producer     | -----> |   Kafka Topic    | -----> | Spark Structured Stream  |
+| (OpenSky + ETL)  | JSON   | flight-data-raw  |        |  Transform + PostgreSQL  |
++------------------+        +------------------+        +--------------------------+
+                                                    └─>  UPSERT (merge/update)
 ```
-
-
 
 ---
 
@@ -71,11 +77,11 @@ ETL_pipeline_dados_real_time_open_sky/
 
 - [Docker](https://www.docker.com/)
 - [Docker Compose](https://docs.docker.com/compose/)
-- Python 3.11+ (apenas para execução manual)
+- Python 3.11+ (para execuções locais e testes)
 
-```
-Crie um banco de dados local para acompanhar os dados caindo, insira as credênciais dele no .env e crie a tabela:
+Crie um banco PostgreSQL e insira as credenciais no `.env`. Use o seguinte esquema:
 
+```sql
 CREATE TABLE IF NOT EXISTS flight_data (
     icao24 VARCHAR(10) NOT NULL,
     callsign VARCHAR(10),
@@ -92,9 +98,9 @@ CREATE TABLE IF NOT EXISTS flight_data (
     record_timestamp TIMESTAMP WITHOUT TIME ZONE,
     PRIMARY KEY (icao24, time_position)
 );
-
-
 ```
+
+---
 
 ### 2. **Clone o Repositório**
 
@@ -103,9 +109,13 @@ git clone https://github.com/TiagoOliverDev/ETL_Pipeline_de_Dados_Climaticos
 cd ETL_Pipeline_de_Dados_Climaticos
 ```
 
+---
+
 ### 3. **Crie o Arquivo `.env`**
 
-Baseie-se no modelo .env.example
+Baseie-se no modelo `.env.example`.
+
+---
 
 ### 4. **Suba o Ambiente com Docker Compose**
 
@@ -113,57 +123,69 @@ Baseie-se no modelo .env.example
 docker-compose up --build
 ```
 
-- O Airflow estará disponível em: [http://localhost:8080](http://localhost:8080/)
-- Usuário e senha definidos no `.env`
+- Airflow: [http://localhost:8080](http://localhost:8080)
+- Kafka: padrão porta 9092
+- PostgreSQL: conforme definido no `.env`
+
+---
 
 ### 5. **Ative a DAG no Airflow**
 
 1. Acesse a interface web do Airflow
 2. Ative a DAG `flight_data_pipeline`
-3. Vá em admin - connections e adicione as credênciais do banco de dados (pode ser local)
-4. Você pode disparar manualmente ou aguardar a execução automática
+3. Configure a conexão `postgres_etl_conn` com seu banco
+4. Dispare manualmente ou aguarde execução automática
 
 ---
 
 ## 🛠️ Execução Manual (fora do Airflow)
 
-Se desejar rodar o pipeline manualmente:
-
 ```bash
 python main.py
+```
+
+Para execução do consumidor Spark Streaming (caso não esteja orquestrado via DAG):
+
+```bash
+spark-submit src/streaming/spark_streaming_consumer.py
 ```
 
 ---
 
 ## 🧩 Principais Arquivos
 
-- `dags/flight_data_dag.py`: DAG principal do Airflow
-- `src/etl/extract_data.py`: Função de extração da API
-- `src/etl/transform_data.py`: Funções de transformação
-- `src/etl/load_data.py`: Função de carga no PostgreSQL
-- `config/settings.py`: Parâmetros globais do pipeline
-- `main.py`: Execução manual do pipeline
+| Caminho | Descrição |
+|--------|-----------|
+| `dags/flight_data_dag.py` | DAG principal (Airflow) |
+| `src/etl/extract_data.py` | Coleta dados da OpenSky API |
+| `src/etl/transform_data.py` | Limpa e normaliza os dados |
+| `src/etl/load_data.py` | Carga no PostgreSQL |
+| `src/streaming/kafka_producer.py` |Envia dados em forma de mensagem na fila a cada 60 segundos |
+| `src/streaming/structured_streaming.py` | Consome dados do Kafka e grava no banco |
+| `config/settings.py` | Configurações globais |
+| `main.py` | Execução local (batch) |
 
 ---
 
 ## 📝 Observações
 
 - Os diretórios `data/raw`, `data/processed` e `logs` estão no `.gitignore`
-- A tabela é criada automaticamente no banco se não existir
-- O Airflow usa a conexão nomeada `postgres_etl_conn`
+- A tabela `flight_data` é criada automaticamente se não existir
+- Airflow usa a conexão `postgres_etl_conn`
+- Kafka pode ser executado via Docker ou serviço externo
 
 ---
 
 ## 📚 Licença
 
-Este projeto é open-source e está sob a licença MIT.
+Este projeto é open-source e está sob a licença [MIT](LICENSE).
 
 ---
 
-## 👩‍💻 Desenvolvido por
+## 👨‍💻 Desenvolvido por
 
-Tiago Oliveira – Analista desenvolvedor e Engenheiro de dados em formação
+**Tiago Oliveira**  
+Analista desenvolvedor e Engenheiro de dados em formação
 
-- 💼 [LinkedIn](https://www.linkedin.com/in/tiago-oliveira-49a2a6205/)
-- 💻 [GitHub](https://github.com/TiagoOliverDev)
-
+- 💼 [LinkedIn](https://www.linkedin.com/in/tiago-oliveira-49a2a6205/)
+- 💻 [GitHub](https://github.com/TiagoOliverDev)
