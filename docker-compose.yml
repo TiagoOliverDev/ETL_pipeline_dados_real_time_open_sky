@@ -52,6 +52,24 @@ services:
     networks:
       - airflow-network
 
+  streamlit-assistant:
+    build:
+      context: ./assistant
+    ports:
+      - "8501:8501"
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - DB_HOST=${HOST}
+      - DB_PORT=${PORT}
+      - DB_USER=${USERNAME}
+      - DB_PASSWORD=${PASSWORD}
+      - DB_NAME=${DATABASE}
+    depends_on:
+      - postgres-etl
+    volumes:
+      - ./assistant:/app
+    networks:
+      - airflow-network
 
     # Kafka com Zookeeper embutido (imagem confluentinc/cp-kafka)
   kafka:
