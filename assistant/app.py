@@ -30,6 +30,35 @@ def run_query(query: str, params=None) -> pd.DataFrame:
 
 # Campo de pergunta para IA
 user_question = st.text_input("🧠 Digite sua pergunta sobre os voos:")
+with st.expander("💡 Exemplos de perguntas que você pode fazer"):
+    st.markdown("""
+### ✈️ **Velocidade dos Voos**
+- Quais são os 10 voos mais rápidos atualmente?
+- Qual é a velocidade média dos voos em km/h?
+- Quais voos estão voando abaixo de 200 km/h?
+- Qual voo registrou a maior velocidade até agora?
+
+### 🗻 **Altitude**
+- Quais voos estão na maior altitude?
+- Qual a altitude média dos voos neste momento?
+- Qual voo voa na menor altitude?
+
+### 🌍 **País de Origem**
+- Quais os países com maior número de voos ativos?
+- Quantos voos há saindo do Brasil agora?
+- Qual país tem os voos mais rápidos?
+
+### ⏰ **Tempo e Posição**
+- Quais voos foram registrados nas últimas 2 horas?
+- Qual o horário do último registro de voo do país selecionado?
+
+### 🧠 **Perguntas Gerais**
+- Há algum voo lento incomum acontecendo agora?
+- Como está o tráfego aéreo em Natal neste momento?
+- Quais voos estão próximos da minha localização?
+
+    """)
+
 
 if user_question:
     with st.spinner("Consultando IA..."):
