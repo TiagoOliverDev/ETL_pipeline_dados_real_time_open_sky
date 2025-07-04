@@ -24,9 +24,9 @@ def get_connection():
         password=DB_PASSWORD
     )
 
-def run_query(query: str) -> pd.DataFrame:
+def run_query(query: str, params=None) -> pd.DataFrame:
     with get_connection() as conn:
-        return pd.read_sql_query(query, conn)
+        return pd.read_sql_query(query, conn, params=params)
 
 # Campo de pergunta para IA
 user_question = st.text_input("🧠 Digite sua pergunta sobre os voos:")
@@ -66,16 +66,6 @@ with col1:
     st.dataframe(df_kmh)
 
 with col2:
-    st.subheader("🌍 Ranking de Voos por País")
-    df_paises = run_query("""
-        SELECT origin_country, COUNT(*) AS total_voos
-        FROM flight_data
-        GROUP BY origin_country
-        ORDER BY total_voos DESC
-        LIMIT 10;
-    """)
-    st.dataframe(df_paises)
-
     st.subheader("🗻 Top 10 Voos em Maior Altitude")
     df_altitude = run_query("""
         SELECT icao24, callsign, origin_country, geo_altitude
@@ -85,3 +75,37 @@ with col2:
         LIMIT 10;
     """)
     st.dataframe(df_altitude)
+
+    st.subheader("🐢 Top 10 Voos Mais Lentos")
+    df_lentos = run_query("""
+        SELECT icao24, callsign, origin_country, velocity
+        FROM flight_data
+        WHERE velocity IS NOT NULL AND velocity > 0
+        ORDER BY velocity ASC
+        LIMIT 10;
+    """)
+    st.dataframe(df_lentos)
+
+# Filtro por país
+st.markdown("---")
+st.header("🌐 Filtrar por País de Origem")
+
+df_paises_full = run_query("""
+    SELECT DISTINCT origin_country FROM flight_data
+    ORDER BY origin_country;
+""")
+
+paises = df_paises_full["origin_country"].dropna().tolist()
+selected_country = st.selectbox("Selecione um país para ver os voos:", paises)
+
+if selected_country:
+    st.subheader(f"🛬 10 primeiros voos de {selected_country}")
+    df_por_pais = run_query("""
+        SELECT icao24, callsign, origin_country, velocity, latitude, longitude, time_position
+        FROM flight_data
+        WHERE origin_country = %s
+        ORDER BY time_position DESC
+        LIMIT 10;
+    """, params=[selected_country])
+    
+    st.dataframe(df_por_pais)
